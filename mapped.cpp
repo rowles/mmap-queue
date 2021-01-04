@@ -13,39 +13,53 @@ std::shared_ptr<void> mmap_ptr(void *addr, size_t length, int prot,
 }
 
 void mmap_file::open() {
-  int flags, prot;
+  int flags, prot, mmap_flags;
 
-  if (mode == Mode::CR) {
-    flags = O_RDWR | O_CREAT;
-    prot = PROT_READ | PROT_WRITE;
-  } else if (mode == Mode::RO) {
-    flags = O_RDONLY;
-    prot = PROT_READ;
-  } else if (mode == Mode::SHARED) {
-    flags = O_CREAT | O_RDWR;
-    prot = PROT_READ | PROT_WRITE;
-  } else {
-    throw mmap_error("Mode not supported");
+  switch (mode) {
+    case Mode::CR:
+      flags = O_RDWR | O_CREAT;
+      prot = PROT_READ | PROT_WRITE;
+      mmap_flags = MAP_SHARED;
+      break;
+    case Mode::RO:
+      flags = O_RDONLY;
+      prot = PROT_READ;
+      mmap_flags = MAP_SHARED;
+      break;
+    case Mode::SHARED:
+      flags = O_CREAT | O_RDWR;
+      prot = PROT_READ | PROT_WRITE;
+      mmap_flags = MAP_SHARED;
+      break;
+    case Mode::ANON:
+      prot = PROT_READ | PROT_WRITE;
+      mmap_flags = MAP_ANONYMOUS | MAP_SHARED;
+      break;
+    default:
+      throw mmap_error("Mode not supported");
   }
 
-  fd = ::open(path.c_str(), flags, 0644);
+  // do not create files for anon maps
+  if (mode != Mode::ANON) {
+    fd = ::open(path.c_str(), flags, 0644);
 
-  if (fd == -1) {
-    throw mmap_error("Failed to open file descriptor");
+    if (fd == -1) {
+      throw mmap_error("Failed to open file descriptor");
+    }
+
+    if (mode == Mode::CR || mode == Mode::SHARED) {
+      truncate(path.c_str(), len);
+    }
+  
+    struct stat stat_t;
+    const int fstat_err = fstat(fd, &stat_t);
+    if (fstat_err == -1) {
+      throw mmap_error("Failed fstat");
+    }
+    len = stat_t.st_size;
   }
 
-  if (mode == Mode::CR || mode == Mode::SHARED) {
-    truncate(path.c_str(), len);
-  }
-
-  struct stat stat_t;
-  const int fstat_err = fstat(fd, &stat_t);
-  if (fstat_err == -1) {
-    throw mmap_error("Failed fstat");
-  }
-  len = stat_t.st_size;
-
-  addr = mmap_ptr(nullptr, len, prot, MAP_SHARED | MAP_ANONYMOUS, fd, 0u);
+  addr = mmap_ptr(nullptr, len, prot, mmap_flags, fd, 0u);
   if (addr == nullptr) {
     throw mmap_error("mmap failed");
   }
@@ -58,7 +72,8 @@ void mmap_file::close() {
     sync();
 
   addr.reset(); // calls munmap
-  ::close(fd);
+  if (mode != Mode::ANON)
+    ::close(fd);
 }
 
 bool mmap_file::is_open() const noexcept {

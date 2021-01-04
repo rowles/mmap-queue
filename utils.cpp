@@ -16,10 +16,13 @@ ring_buffer* from_mmap() {
   auto file_path = "/tmp/123";
   mmap_file* xx = new mmap_file(
       file_path,
-      mmap_file::Mode::SHARED, s);
+      mmap_file::Mode::ANON, s);
   xx->open();
 
   ring_buffer* rg = new(xx->address().get()) ring_buffer(
-      s-sizeof(ring_buffer), (unsigned char*)xx->address().get() + sizeof(ring_buffer));
+      s - sizeof(ring_buffer),
+      (unsigned char*)xx->address().get() + sizeof(ring_buffer)
+    );
+
   return rg;
 }

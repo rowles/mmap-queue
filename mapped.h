@@ -33,7 +33,8 @@ public:
   enum Mode {
     RO, // read only
     CR, // create
-    SHARED,
+    SHARED, // shared file backed
+    ANON, // shared anon
   };
 
   mmap_file(const std::string_view _path, const Mode _mode,

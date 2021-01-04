@@ -4,8 +4,8 @@ cdef extern from "ring_buffer.h":
         int capacity_bytes()
         size_t get_size()
         void debug()
-        write_status put(unsigned char* data, size_t length)
-        read_status get(unsigned char* data, size_t length)
+        write_status put(unsigned char* data, size_t length) nogil
+        read_status get(unsigned char* data, size_t length) nogil
     
     cdef struct read_status:
         int code

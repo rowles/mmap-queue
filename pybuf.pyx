@@ -1,3 +1,7 @@
+# cython: language_level=3
+# cython: boundscheck=False
+# cython: infer_types=False
+
 from libcpp.vector cimport vector
 import cython
 
@@ -7,6 +11,9 @@ from libc.stdlib cimport malloc, free
 
 cimport rb
 cimport ut
+
+import queue as std_queue
+
 
 cdef size_t bytes_to_ptr(b):
     ptr = ctypes.cast(b, ctypes.POINTER(ctypes.c_byte))
@@ -35,8 +42,8 @@ cdef class PyRingBuf:
 
         res = self.thisptr.put(data, length)
 
-        if res.code == -1:
-            raise Exception()
+        if res['code'] == -1:
+            raise std_queue.Full()
 
     def get_bytes(self):
         cdef rb.read_status res
@@ -45,7 +52,8 @@ cdef class PyRingBuf:
         cdef unsigned char* buffer_ptr = <unsigned char*> buffer_adr
         
         while True:
-            res = self.thisptr.get(buffer_ptr, self.msg_buffer_len)
+            with nogil:
+                res = self.thisptr.get(buffer_ptr, self.msg_buffer_len)
 
             if res.code == -2:
                 new_size = (int)((res.length+sizeof(size_t))*1.5)
@@ -54,8 +62,7 @@ cdef class PyRingBuf:
                 break
 
         if res.code == -1:
-            raise Exception()
-            return None
+            raise std_queue.Empty()
         elif res.code == 0:
             return self.memview[sizeof(size_t):res.length+sizeof(size_t)]
 
@@ -65,7 +72,9 @@ cdef class PyRingBuf:
         self.memview = memoryview(self.msg_buffer)
 
     def __dealloc__(self):
-        del self.thisptr
+        pass
+        #print('__dealloc__')
+        #del self.thisptr
 
     def size(self):
         return self.thisptr.get_size()
