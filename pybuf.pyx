@@ -11,6 +11,7 @@ from libc.stdlib cimport malloc, free
 
 cimport rb
 cimport ut
+cimport mmap
 
 import queue as std_queue
 
@@ -22,17 +23,17 @@ cdef size_t bytes_to_ptr(b):
 
 cdef class PyRingBuf:
     cdef rb.ring_buffer *thisptr
-    #cdef unsigned char* msg_buffer
+    cdef mmap.mmap_t *mem_region
+
     cdef object msg_buffer
     cdef size_t msg_buffer_len
     cdef object memview
 
     def __cinit__(self):
-        #self.thisptr = ut.from_mem()
-        self.thisptr = ut.from_mmap()
+        self.mem_region = new mmap.mmap_t(mmap.Mode.ANON, 10000)
+        self.thisptr = ut.from_mmap(self.mem_region)
 
         self.msg_buffer_len = 100
-        #self.msg_buffer = <unsigned char*>malloc(sizeof(unsigned char)*self.msg_buffer_len)
         self.msg_buffer = (ctypes.c_ubyte * self.msg_buffer_len)()
         self.memview = memoryview(self.msg_buffer)
 
@@ -72,16 +73,13 @@ cdef class PyRingBuf:
         self.memview = memoryview(self.msg_buffer)
 
     def __dealloc__(self):
-        pass
-        #print('__dealloc__')
-        #del self.thisptr
+        del self.mem_region
 
     def size(self):
         return self.thisptr.get_size()
 
     def debug(self):
         self.thisptr.debug()
-        #free(self.msg_buffer)
 
 class Queue:
     def __init__(self):
