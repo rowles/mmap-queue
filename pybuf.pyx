@@ -29,8 +29,12 @@ cdef class PyRingBuf:
     cdef size_t msg_buffer_len
     cdef object memview
 
-    def __cinit__(self):
-        self.mem_region = new mmap.mmap_t(mmap.Mode.ANON, 10000)
+    def __cinit__(self, size_t size=10000, str file_path=None):
+        if file_path:
+            self.mem_region = new mmap.mmap_t(file_path, mmap.Mode.SHARED, size)
+        else:
+            self.mem_region = new mmap.mmap_t(mmap.Mode.ANON, size)
+
         self.thisptr = ut.from_mmap(self.mem_region)
 
         self.msg_buffer_len = 100
@@ -57,7 +61,7 @@ cdef class PyRingBuf:
                 res = self.thisptr.get(buffer_ptr, self.msg_buffer_len)
 
             if res.code == -2:
-                new_size = (int)((res.length+sizeof(size_t))*1.5)
+                new_size = (int)((res.length+sizeof(size_t))*2)
                 self._realloc_buffer(new_size)
             else:
                 break
@@ -65,7 +69,8 @@ cdef class PyRingBuf:
         if res.code == -1:
             raise std_queue.Empty()
         elif res.code == 0:
-            return self.memview[sizeof(size_t):res.length+sizeof(size_t)]
+            view = self.memview[sizeof(size_t):res.length+sizeof(size_t)]
+            return view
 
     cdef _realloc_buffer(self, size_t new_size):
         self.msg_buffer_len = new_size
@@ -73,26 +78,11 @@ cdef class PyRingBuf:
         self.memview = memoryview(self.msg_buffer)
 
     def __dealloc__(self):
-        del self.mem_region
+        del self.mem_region 
 
     def size(self):
         return self.thisptr.get_size()
 
     def debug(self):
         self.thisptr.debug()
-
-class Queue:
-    def __init__(self):
-        self.ring_buf = PyRingBuf()
-
-    def put(self, b):
-        return self.ring_buf.put_bytes(b)
-
-    def get(self):
-        res = self.ring_buf.get_bytes()
-        return res
-
-    def size(self):
-        return self.ring_buf.size()
-
 
