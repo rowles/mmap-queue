@@ -12,7 +12,7 @@ std::shared_ptr<void> mmap_ptr(void *addr, size_t length, int prot,
       deleter};
 }
 
-void mmap_file::open() {
+void mmap_t::open() {
   int flags, prot, mmap_flags;
 
   switch (mode) {
@@ -65,9 +65,9 @@ void mmap_file::open() {
   }
 }
 
-void mmap_file::sync() { msync(addr.get(), len, MS_SYNC); }
+void mmap_t::sync() { msync(addr.get(), len, MS_SYNC); }
 
-void mmap_file::close() {
+void mmap_t::close() {
   if (mode == Mode::CR)
     sync();
 
@@ -76,20 +76,13 @@ void mmap_file::close() {
     ::close(fd);
 }
 
-bool mmap_file::is_open() const noexcept {
+bool mmap_t::is_fd_open() const noexcept {
   return fcntl(fd, F_GETFL) != -1 || errno != EBADF;
 }
 
-std::shared_ptr<void> mmap_file::address() const { return addr; }
+std::shared_ptr<void> mmap_t::address() const { return addr; }
 
-size_t mmap_file::size() const noexcept { return len; }
+size_t mmap_t::size() const noexcept { return len; }
 
-void mmap_file::set_size(const size_t len) {
-  if (is_open()) {
-    truncate(path.c_str(), len);
-    //throw mmap_error("cannot resize open mmap");
-  }
-  this->len = len;
-}
 
 } // namespace mmapped
