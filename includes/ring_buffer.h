@@ -42,6 +42,7 @@ public:
     printf("head: %p %li\n", &head, head);
     printf("tail: %p %li\n", &tail, tail);
     printf("size: %p %li\n", &size, size);
+    printf("max size: %li\n", max_bytes);
   }
 
   write_status put(B* data, size_t length) noexcept {

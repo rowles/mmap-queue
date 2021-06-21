@@ -13,6 +13,7 @@ cimport rb
 cimport ut
 cimport mmap
 
+import os
 import queue as std_queue
 
 
@@ -25,11 +26,14 @@ cdef class PyRingBuf:
     cdef rb.ring_buffer *thisptr
     cdef mmap.mmap_t *mem_region
 
+    cdef object file_path
+
+    # reuseable buffer for message passing
     cdef object msg_buffer
     cdef size_t msg_buffer_len
     cdef object memview
 
-    def __cinit__(self, size_t size=1024**2, str file_path=None):
+    def __cinit__(self, size_t size=1024**2, str file_path=None, cleanup=True):
         """ Initialize a mmap backed ring buffer
 
         Parameters
@@ -38,9 +42,12 @@ cdef class PyRingBuf:
           Size of ring buffer in bytes
         file_path: str, optional
           File path for a file backed mmap. Memory map will be anonymous if not provided.
+        cleanup: bool, optional
+          Clean file based mmap after collection
         """
         if file_path:
-            self.mem_region = new mmap.mmap_t(file_path, mmap.Mode.SHARED, size)
+            self.file_path = file_path.encode('utf-8')
+            self.mem_region = new mmap.mmap_t(self.file_path, mmap.Mode.SHARED, size)
         else:
             self.mem_region = new mmap.mmap_t(mmap.Mode.ANON, size)
 
@@ -102,7 +109,9 @@ cdef class PyRingBuf:
         self.memview = memoryview(self.msg_buffer)
 
     def __dealloc__(self):
-        del self.mem_region 
+        del self.mem_region
+        if self.file_path:
+            os.remove(self.file_path)
 
     def size(self):
         """
