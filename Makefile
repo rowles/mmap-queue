@@ -28,6 +28,6 @@ dist_py:
 	  python setup.py build_ext --inplace
 
 
-test:
+utest:
 	source venv/bin/activate && \
 	  python3 test.py

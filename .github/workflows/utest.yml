@@ -16,9 +16,9 @@ jobs:
         #- name: Build C++ Code
         #       run: make build
       - name: Build Cython Code
-        run: make py
+        run: make dist_py
       - name: Run python tests
-        run: make test
+        run: make utest
 
 
 
