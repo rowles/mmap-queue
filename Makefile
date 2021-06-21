@@ -30,4 +30,5 @@ dist_py:
 
 utest:
 	source venv/bin/activate && \
+	  export LD_LIBRARY_PATH="." && \
 	  python3 test.py
