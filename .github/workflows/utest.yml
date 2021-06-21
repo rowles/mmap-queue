@@ -13,8 +13,8 @@ jobs:
           architecture: x64
       - name: Setup environment
         run: make setup_venv
-        #- name: Build C++ Code
-        #       run: make build
+      - name: Build C++ Code
+        run: make build_libringbuf
       - name: Build Cython Code
         run: make dist_py
       - name: Run python tests
