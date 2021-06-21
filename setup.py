@@ -13,7 +13,7 @@ setup(
                     "ring_buffer.cpp",
                     "mapped.cpp",
                 ], language="c++",
-                extra_compile_args=["-std=c++17", "-O3"],
+                extra_compile_args=["-std=c++2a", "-O3"],
             )
         ],
         cmdclass = {'build_ext': build_ext}

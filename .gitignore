@@ -1,0 +1,8 @@
+venv/
+build/
+
+*.pyc
+*.so
+
+pybuf.cpp
+
