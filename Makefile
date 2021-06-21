@@ -18,3 +18,8 @@ build:
 py:
 	source venv/bin/activate && \
 	  python setup.py build_ext --inplace
+
+
+test:
+	source venv/bin/activate && \
+	  python3 test.py
