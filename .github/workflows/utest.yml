@@ -1,0 +1,27 @@
+name: Unit Test
+on: [push]
+jobs:
+  utest:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Setup python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.x'
+          architecture: x64
+      - name: Setup environment
+        run: make setup_venv
+      - name: Build C++ Code
+        run: make build
+      - name: Build Cython Code
+        run: make py
+      - name: Run python tests
+        run: make test
+
+
+
+
+
+
