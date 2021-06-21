@@ -44,7 +44,7 @@ public:
     printf("size: %p %li\n", &size, size);
   }
 
-  write_status put_wait(float timeout);
+  write_status put_wait(float timeout) {}
   read_status get_wait(float timeout) {
 
     {

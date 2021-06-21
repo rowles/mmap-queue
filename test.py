@@ -1,9 +1,9 @@
 import pybuf
-q = pybuf.Queue()
+q = pybuf.PyRingBuf()
 
-for i in range(200000):
-    r = q.put(b'the sky is falling ')
+for i in range(20):
+    r = q.put_bytes(b'the sky is falling ')
 #r = q.get()
 #print(r.tobytes())
 print(q.size())
-q.ring_buf.debug()
+q.debug()
