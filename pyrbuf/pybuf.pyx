@@ -29,7 +29,16 @@ cdef class PyRingBuf:
     cdef size_t msg_buffer_len
     cdef object memview
 
-    def __cinit__(self, size_t size=10000, str file_path=None):
+    def __cinit__(self, size_t size=1024**2, str file_path=None):
+        """ Initialize a mmap backed ring buffer
+
+        Parameters
+        ----------
+        size: size_t (default 1 MB)
+          Size of ring buffer in bytes
+        file_path: str, optional
+          File path for a file backed mmap. Memory map will be anonymous if not provided.
+        """
         if file_path:
             self.mem_region = new mmap.mmap_t(file_path, mmap.Mode.SHARED, size)
         else:
@@ -37,20 +46,35 @@ cdef class PyRingBuf:
 
         self.thisptr = ut.from_mmap(self.mem_region)
 
-        self.msg_buffer_len = 100
+        self.msg_buffer_len = 1024   # Starting length of buffer in bytes
         self.msg_buffer = (ctypes.c_ubyte * self.msg_buffer_len)()
         self.memview = memoryview(self.msg_buffer)
 
-    def put_bytes(self, b):
-        cdef unsigned char* data = <unsigned char*>bytes_to_ptr(b)
-        cdef size_t length = len(data)
+    def put_bytes(self, data):
+        """
+        Put bytes into buffer
 
-        res = self.thisptr.put(data, length)
+        Parameters
+        ----------
+        data: bytes
+          Byte sequence to put into buffer.
+        """
+        cdef unsigned char* casted_data = <unsigned char*>bytes_to_ptr(data)
+        cdef size_t length = len(casted_data)
+
+        res = self.thisptr.put(casted_data, length)
 
         if res['code'] == -1:
             raise std_queue.Full()
 
     def get_bytes(self):
+        """
+        Get bytes from buffer
+
+        Returns
+        -------
+        memoryview of data
+        """
         cdef rb.read_status res
         cdef size_t new_size
         cdef size_t buffer_adr = ctypes.addressof(self.msg_buffer)
@@ -81,6 +105,13 @@ cdef class PyRingBuf:
         del self.mem_region 
 
     def size(self):
+        """
+        Get size of queue in bytes
+        
+        Returns
+        -------
+        size of queue as bytes
+        """
         return self.thisptr.get_size()
 
     def debug(self):

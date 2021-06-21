@@ -1,11 +1,5 @@
 from libcpp.string cimport string
 
-#cdef extern from "mapped.h" namespace "mapped::map_t":
-#    cdef enum Mode:
-#        RO
-#        CR
-#        SHARD
-#        ANON
 
 cdef extern from "mapped.h" namespace "mmapped":
     cdef enum Mode 'mmapped::mmap_t':

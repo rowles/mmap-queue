@@ -13,5 +13,4 @@ cdef extern from "ring_buffer.h":
 
     cdef struct write_status:
         int code
-        #int length
 

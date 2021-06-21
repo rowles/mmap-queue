@@ -44,14 +44,6 @@ public:
     printf("size: %p %li\n", &size, size);
   }
 
-  write_status put_wait(float timeout) {}
-  read_status get_wait(float timeout) {
-
-    {
-      // wait until timeout
-    }
-  }
-
   write_status put(B* data, size_t length) noexcept {
     std::lock_guard<std::mutex> lock(buf_mutex);
  

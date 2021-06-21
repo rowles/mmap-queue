@@ -15,7 +15,7 @@ clean:
 setup_venv:
 	python3 -m venv venv \
 	  && source ./venv/bin/activate \
-	  && pip install cython
+	  && pip install cython pytest
 
 
 build_libringbuf:
@@ -31,4 +31,4 @@ dist_py:
 utest:
 	source venv/bin/activate && \
 	  export LD_LIBRARY_PATH="." && \
-	  python3 test.py
+	  pytest test.py
