@@ -19,9 +19,6 @@ jobs:
         run: make dist_py
       - name: Run python tests
         run: make utest
-
-
-
-
-
+      - name: Run python benchmark
+        run: make benchmark
 

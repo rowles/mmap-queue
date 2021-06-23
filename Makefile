@@ -9,6 +9,7 @@ all:
 clean:
 	rm -rf build
 	rm -rf *.so
+	rm -rf mmap_queue/mmap_queue.cpp
 
 setup_venv:
 	python3 -m venv venv \
@@ -17,7 +18,7 @@ setup_venv:
 
 
 build_libringbuf:
-	$(CXX) -I includes/ $(CFLAGS) $(SRC) -shared -o libringbuf.so
+	$(CXX) -I ./includes/ $(CFLAGS) $(SRC) -shared -o libringbuf.so
 
 
 dist_py:

@@ -51,15 +51,18 @@ def setup(num_procs, num_objects):
 
 
 def bench_inserts(num_objects):
-    start_ts = time.time()
 
     test_object = b'1'*32
+    start_ts = time.time()
 
     for _ in range(num_objects):
         q.put_bytes(test_object)
+
     end_ts = time.time()
     elasped = end_ts-start_ts
-    print(f'Added {num_objects} in {elasped:.6f}s, {num_objects/elasped:.2f} inserts/second')
+    insert_rate = num_objects/elasped
+    bytes_rate = (len(test_object) * num_objects) / (1024**2) / elasped
+    print(f'Added {num_objects} in {elasped:.6f}s, {num_objects/elasped:.2f} inserts/second, {bytes_rate:.2f} Mb/s')
 
 
 
