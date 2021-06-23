@@ -6,24 +6,55 @@
 #include <unistd.h>
 #include <cstring>
 
-typedef uint8_t B;
+namespace ring_buffer {
+/*
+ * Shared process mutex and guard (linux only)
+ **/
+struct process_mutex {
+  struct guard {
+    guard(process_mutex *m) : m(m) {
+        pthread_mutex_lock(&m->mutex);
+    }
 
+    ~guard() {
+        pthread_mutex_unlock(&m->mutex);
+    }
+
+  private:
+    process_mutex *m;
+  };
+
+  pthread_mutex_t mutex{};
+  pthread_mutexattr_t mutexattr{};
+
+  process_mutex() {
+    pthread_mutexattr_init(&mutexattr);
+    pthread_mutexattr_setpshared(&mutexattr, PTHREAD_PROCESS_SHARED);
+    pthread_mutex_init(&mutex, &mutexattr);
+  }
+};
+
+// Return struct for reads
 struct read_status {
-  int code{0};
+  int8_t code{0};
   size_t length{0};
 };
 
+// Return struct for writes
 struct write_status {
-  int code{0};
+  int8_t code{0};
 };
 
-
-class ring_buffer {
+class mmap_ring_buffer {
 public:
 
-  ring_buffer(size_t max_bytes, B* buffer) 
+  constexpr static int8_t STATUS_OK = 0;
+  constexpr static int8_t STATUS_EMPTY = -1;
+  constexpr static int8_t STATUS_FULL = -2;
+
+  mmap_ring_buffer(size_t max_bytes, void* buffer) 
     : max_bytes(max_bytes), buffer(buffer) {}
-  ~ring_buffer() = default;
+  ~mmap_ring_buffer() = default;
 
   size_t capacity_bytes() const {
     return max_bytes;
@@ -37,50 +68,53 @@ public:
     return size + data_size <= max_bytes;
   }
 
-  void debug() {
+  /*void debug() {
     printf("buffer: %p\n", buffer);
     printf("head: %p %li\n", &head, head);
     printf("tail: %p %li\n", &tail, tail);
     printf("size: %p %li\n", &size, size);
     printf("max size: %li\n", max_bytes);
-  }
+  }*/
 
-  write_status put(B* data, size_t length) noexcept {
-    std::lock_guard<std::mutex> lock(buf_mutex);
+  write_status put(void* data, size_t length) noexcept {
+    process_mutex::guard g{&mutex};
  
     if (!has_capacity(length + sizeof(size_t))) return write_status{.code=-1};
 
-    _put((B*)&length, sizeof(length));
+    // put the header and data
+    _put((void*)&length, sizeof(length));
     _put(data, length);
     
-    return write_status{.code=0};
+    return write_status{.code=STATUS_OK};
   }
 
-  read_status get(B* data_buf, size_t length) noexcept {
-    std::lock_guard<std::mutex> lock(buf_mutex);
+  // recv_buf, recv_len
+  read_status get(void* data_buf, size_t length) noexcept {
+    process_mutex::guard g{&mutex};
 
-    if (size == 0) {
-      return read_status{.code=-1}; // empty
+    // queue is empty
+    if (size <= 0) {
+      return read_status{.code=STATUS_EMPTY}; // empty
     }
 
+    // read size of data first
     size_t data_size{0};
-    _get((B*)&data_size, sizeof(data_size), false);
+    _get((void*)&data_size, sizeof(data_size), false);
 
+    // compare to recieve buffer
     if (data_size > length) {
-      return read_status{.code=-2, .length=data_size}; // no room
+      return read_status{.code=STATUS_FULL, .length=data_size}; // no room
     }
     
+    // get the data
     _get(data_buf, data_size+sizeof(size_t), true);
 
-    return read_status{.code=0, .length=data_size};
+    return read_status{.code=STATUS_OK, .length=data_size};
   }
 
 private:
 
-  void get_data(B* data, size_t data_size, bool pop=false) noexcept;
-  void put_data(B* data, size_t data_size) noexcept;
-
-  void _get(B* data, size_t data_size, bool pop=false) noexcept {
+  void _get(void* data, size_t data_size, bool pop=false) noexcept {
     size_t new_head = head;
 
     const bool wrap = (head + data_size) >= max_bytes;
@@ -96,10 +130,9 @@ private:
     }
   }
 
-  void _put(B* data, size_t data_size) noexcept {
+  void _put(void* data, size_t data_size) noexcept {
     const bool wrap = tail + data_size >= max_bytes;
 
-    //printf("put wrap %i\n", wrap);
     if (!wrap) {
       std::memcpy(buffer + tail, data, data_size);
       tail += data_size;
@@ -112,7 +145,12 @@ private:
   volatile size_t size{0};
   volatile size_t head{0};
   volatile size_t tail{0};
-  B* buffer{nullptr};
-  std::mutex buf_mutex;
+  process_mutex mutex{};
+  void* buffer{nullptr};
 };
+
+// must be true to be allocated on mmap
+static_assert(std::is_trivially_copyable<mmap_ring_buffer>::value);
+
+} // namespace ring_buffer
 

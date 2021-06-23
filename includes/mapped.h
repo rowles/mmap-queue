@@ -1,5 +1,4 @@
-#ifndef MY_V2_H
-#define MY_V2_H
+#pragma once
 
 #include <memory>
 #include <string>
@@ -29,7 +28,7 @@ std::shared_ptr<void> mmap_ptr(void *addr, size_t length, int prot,
                                         int flags, int fd,
                                         off_t offset) noexcept;
 
-class mmap_t {
+class mmap_region {
 public:
   enum Mode {
     RO, // read only
@@ -38,15 +37,15 @@ public:
     ANON, // shared anon
   };
 
-  mmap_t(const Mode _mode, const size_t _len = 0) : mode(_mode), len(_len) {
+  mmap_region(const Mode _mode, const size_t _len = 0) : mode(_mode), len(_len) {
     open();
   };
-  mmap_t(const std::string_view _path, const Mode _mode,
+  mmap_region(const std::string_view _path, const Mode _mode,
             const size_t _len = 0)
       : path(_path), mode(_mode), len(_len) {
     open();
   };
-  ~mmap_t() {
+  ~mmap_region() {
     if (is_fd_open())
       close();
   }
@@ -71,4 +70,3 @@ private:
 
 } // namespace mmapped
 
-#endif 

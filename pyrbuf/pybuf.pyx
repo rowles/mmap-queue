@@ -4,14 +4,13 @@
 
 from libcpp.vector cimport vector
 import cython
+import mmap as stdmmap
 
 import ctypes
 
 from libc.stdlib cimport malloc, free
 
-cimport rb
-cimport ut
-cimport mmap
+cimport ringbuf
 
 import os
 import queue as std_queue
@@ -23,8 +22,8 @@ cdef size_t bytes_to_ptr(b):
 
 
 cdef class PyRingBuf:
-    cdef rb.ring_buffer *thisptr
-    cdef mmap.mmap_t *mem_region
+    cdef ringbuf.mmap_ring_buffer *thisptr
+    cdef ringbuf.mmap_region *mem_region
 
     cdef object file_path
 
@@ -33,7 +32,7 @@ cdef class PyRingBuf:
     cdef size_t msg_buffer_len
     cdef object memview
 
-    def __cinit__(self, size_t size=1024**2, str file_path=None, cleanup=True):
+    def __cinit__(self, size_t size=1024**3, str file_path=None, cleanup=True):
         """ Initialize a mmap backed ring buffer
 
         Parameters
@@ -47,15 +46,14 @@ cdef class PyRingBuf:
         """
         if file_path:
             self.file_path = file_path.encode('utf-8')
-            self.mem_region = new mmap.mmap_t(self.file_path, mmap.Mode.SHARED, size)
+            self.mem_region = new ringbuf.mmap_region(self.file_path, ringbuf.Mode.SHARED, size)
         else:
-            self.mem_region = new mmap.mmap_t(mmap.Mode.ANON, size)
+            self.mem_region = new ringbuf.mmap_region(ringbuf.Mode.ANON, size)
+        self.thisptr = ringbuf.from_mmap(self.mem_region)
 
-        self.thisptr = ut.from_mmap(self.mem_region)
-
-        self.msg_buffer_len = 1024   # Starting length of buffer in bytes
-        self.msg_buffer = (ctypes.c_ubyte * self.msg_buffer_len)()
-        self.memview = memoryview(self.msg_buffer)
+        self.msg_buffer_len = 0 # Starting length of buffer in bytes
+        self.msg_buffer = None
+        self.memview = None
 
     def put_bytes(self, data):
         """
@@ -68,7 +66,6 @@ cdef class PyRingBuf:
         """
         cdef unsigned char* casted_data = <unsigned char*>bytes_to_ptr(data)
         cdef size_t length = len(casted_data)
-
         res = self.thisptr.put(casted_data, length)
 
         if res['code'] == -1:
@@ -82,7 +79,10 @@ cdef class PyRingBuf:
         -------
         memoryview of data
         """
-        cdef rb.read_status res
+        if self.msg_buffer is None:
+            self._realloc_buffer(32)
+
+        cdef ringbuf.read_status res
         cdef size_t new_size
         cdef size_t buffer_adr = ctypes.addressof(self.msg_buffer)
         cdef unsigned char* buffer_ptr = <unsigned char*> buffer_adr
@@ -123,6 +123,4 @@ cdef class PyRingBuf:
         """
         return self.thisptr.get_size()
 
-    def debug(self):
-        self.thisptr.debug()
 

@@ -1,9 +1,7 @@
 SHELL = /bin/bash
 
-CXX       ?= g++-10
 CFLAGS    ?= -fPIC -O3 -std=c++2a -Wall -Wextra -pedantic
-
-SRC       ?= libringbuf/*.cpp
+SRC       ?= $(wildcard libringbuf/*.cpp)
 
 
 all:
@@ -27,8 +25,17 @@ dist_py:
 	  export LDFLAGS="-L." && \
 	  python setup.py build_ext --inplace
 
+.PHONY: build
+build: clean build_libringbuf dist_py
+
 
 utest:
 	source venv/bin/activate && \
 	  export LD_LIBRARY_PATH="." && \
 	  pytest test.py
+
+
+benchmark:
+	source venv/bin/activate && \
+	  export LD_LIBRARY_PATH="." && \
+	  python benchmark.py
