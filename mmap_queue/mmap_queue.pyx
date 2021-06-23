@@ -21,7 +21,7 @@ cdef size_t bytes_to_ptr(b):
     return ctypes.addressof(ptr.contents)
 
 
-cdef class PyRingBuf:
+cdef class RingBuffer:
     cdef ringbuf.mmap_ring_buffer *thisptr
     cdef ringbuf.mmap_region *mem_region
 

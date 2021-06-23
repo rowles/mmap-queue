@@ -3,7 +3,7 @@ import functools
 import time
 import queue
 
-import pybuf
+import mmap_queue
 
 
 def sum_worker():
@@ -65,17 +65,17 @@ def bench_inserts(num_objects):
 
 if __name__ == '__main__':
     # use queue on global scope to prevent pickling
-    q = pybuf.PyRingBuf(1*1024**3)
+    q = mmap_queue.RingBuffer(1*1024**3)
     setup(num_procs=5, num_objects=1000)
 
     del q
     
-    q = pybuf.PyRingBuf(50*1024**3, file_path='/tmp/bench.buf')
+    q = mmap_queue.RingBuffer(50*1024**3, file_path='/tmp/bench.buf')
     setup(num_procs=5, num_objects=1_000_000)
 
     del q
 
-    q = pybuf.PyRingBuf(50*1024**3, file_path='/tmp/bench.buf')
+    q = mmap_queue.RingBuffer(50*1024**3, file_path='/tmp/bench.buf')
     bench_inserts(10_000_000)
     
     del q

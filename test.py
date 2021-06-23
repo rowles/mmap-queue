@@ -1,4 +1,4 @@
-import pybuf
+import mmap_queue
 
 import pytest
 import os
@@ -6,7 +6,7 @@ import queue as buildin_q
 
 
 def test_put_get():
-    q = pybuf.PyRingBuf()
+    q = mmap_queue.RingBuffer()
 
     q.put_bytes(b'the')
     q.put_bytes(b'sky')
@@ -24,7 +24,7 @@ def test_put_get():
 
 
 def test_fifo():
-    q = pybuf.PyRingBuf()
+    q = mmap_queue.RingBuffer()
 
     q.put_bytes(b'1')
     q.put_bytes(b'2')
@@ -40,7 +40,7 @@ def test_fifo():
 
 
 def test_empty():
-    q = pybuf.PyRingBuf()
+    q = mmap_queue.RingBuffer()
 
     with pytest.raises(buildin_q.Empty):
         q.get_bytes()
@@ -49,7 +49,7 @@ def test_empty():
 
 
 def test_full():
-    q = pybuf.PyRingBuf(100)
+    q = mmap_queue.RingBuffer(100)
 
     with pytest.raises(buildin_q.Full):
         q.put_bytes(b'a'*1000)
@@ -58,9 +58,9 @@ def test_full():
 
 
 def test_filebacked():
-    testfile = '/tmp/pyrbuf-test-buffer'
+    testfile = '/tmp/test.buf'
 
-    q = pybuf.PyRingBuf(1000, file_path=testfile)
+    q = mmap_queue.RingBuffer(1000, file_path=testfile)
 
     assert os.path.isfile(testfile)
 
