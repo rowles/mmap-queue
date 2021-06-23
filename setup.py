@@ -5,9 +5,6 @@ from Cython.Distutils import build_ext
 
 DEPS = [
     'pyrbuf/pybuf.pyx',
-   # 'cpp/utils.cpp',
-   # 'cpp/ring_buffer.cpp',
-   # 'cpp/mapped.cpp',
 ]
 
 

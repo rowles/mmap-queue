@@ -1,4 +1,4 @@
-#include "mapped.h"
+#include "mmapped.h"
 
 namespace mmapped {
 // wrap mmap around smart ptr

@@ -17,7 +17,7 @@ cdef extern from "ring_buffer.h" namespace "ring_buffer":
         read_status get(unsigned char* data, size_t length) nogil
 
 
-cdef extern from "mapped.h" namespace "mmapped":
+cdef extern from "mmapped.h" namespace "mmapped":
     cdef enum Mode 'mmapped::mmap_region':
         RO 'mmapped::mmap_region::Mode::RO'
         CR 'mmapped::mmap_region::Mode::CR'
