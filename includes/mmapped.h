@@ -30,17 +30,17 @@ std::shared_ptr<void> mmap_ptr(void *addr, size_t length, int prot,
 
 class mmap_region {
 public:
-  enum Mode {
+  enum mode_t {
     RO, // read only
     CR, // create
     SHARED, // shared file backed
     ANON, // shared anon
   };
 
-  mmap_region(const Mode _mode, const size_t _len = 0) : mode(_mode), len(_len) {
+  mmap_region(const mode_t _mode, const size_t _len = 0) : mode(_mode), len(_len) {
     open();
   };
-  mmap_region(const std::string_view _path, const Mode _mode,
+  mmap_region(const std::string_view _path, const mode_t _mode,
             const size_t _len = 0)
       : path(_path), mode(_mode), len(_len) {
     open();
@@ -60,7 +60,7 @@ public:
 
 private:
   const std::string path{};
-  const Mode mode{RO};
+  const mode_t mode{RO};
 
   size_t len{0};
 

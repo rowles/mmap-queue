@@ -46,9 +46,9 @@ cdef class RingBuffer:
         """
         if file_path:
             self.file_path = file_path.encode('utf-8')
-            self.mem_region = new ringbuf.mmap_region(self.file_path, ringbuf.Mode.SHARED, size)
+            self.mem_region = new ringbuf.mmap_region(self.file_path, ringbuf.mode_t.SHARED, size)
         else:
-            self.mem_region = new ringbuf.mmap_region(ringbuf.Mode.ANON, size)
+            self.mem_region = new ringbuf.mmap_region(ringbuf.mode_t.ANON, size)
         self.thisptr = ringbuf.from_mmap(self.mem_region)
 
         self.msg_buffer_len = 0 # Starting length of buffer in bytes
@@ -68,7 +68,7 @@ cdef class RingBuffer:
         cdef size_t length = len(casted_data)
         res = self.thisptr.put(casted_data, length)
 
-        if res['code'] == -1:
+        if res['status'] == ringbuf.STATUS_FULL:
             raise std_queue.Full()
 
     def get_bytes(self):
@@ -91,15 +91,15 @@ cdef class RingBuffer:
             with nogil:
                 res = self.thisptr.get(buffer_ptr, self.msg_buffer_len)
 
-            if res.code == -2:
+            if res.status == ringbuf.STATUS_FULL:
                 new_size = (int)((res.length+sizeof(size_t))*2)
                 self._realloc_buffer(new_size)
             else:
                 break
 
-        if res.code == -1:
+        if res.status == ringbuf.STATUS_EMPTY:
             raise std_queue.Empty()
-        elif res.code == 0:
+        elif res.status == ringbuf.STATUS_OK:
             view = self.memview[sizeof(size_t):res.length+sizeof(size_t)]
             return view
 

@@ -3,12 +3,12 @@ from libcpp.string cimport string
 
 cdef extern from "ring_buffer.h" namespace "ring_buffer":
     
-    cdef struct read_status :
-        int code
+    cdef struct read_status:
+        int status
         int length
 
-    cdef struct write_status :
-        int code
+    cdef struct write_status:
+        int status
     
     cdef cppclass mmap_ring_buffer:
         int capacity_bytes()
@@ -16,17 +16,21 @@ cdef extern from "ring_buffer.h" namespace "ring_buffer":
         write_status put(unsigned char* data, size_t length) nogil
         read_status get(unsigned char* data, size_t length) nogil
 
+    int STATUS_OK "ring_buffer::STATUS_OK"
+    int STATUS_EMPTY "ring_buffer::STATUS_EMPTY"
+    int STATUS_FULL "ring_buffer::STATUS_FULL"
+
 
 cdef extern from "mmapped.h" namespace "mmapped":
-    cdef enum Mode 'mmapped::mmap_region':
-        RO 'mmapped::mmap_region::Mode::RO'
-        CR 'mmapped::mmap_region::Mode::CR'
-        SHARED 'mmapped::mmap_region::Mode::SHARED'
-        ANON 'mmapped::mmap_region::Mode::ANON'
+    cdef enum mode_t 'mmapped::mmap_region':
+        RO 'mmapped::mmap_region::mode_t::RO'
+        CR 'mmapped::mmap_region::mode_t::CR'
+        SHARED 'mmapped::mmap_region::mode_t::SHARED'
+        ANON 'mmapped::mmap_region::mode_t::ANON'
 
     cdef cppclass mmap_region:
-        mmap_region(Mode _mode, size_t len)
-        mmap_region(string path, Mode _mode, size_t len)
+        mmap_region(mode_t _mode, size_t len)
+        mmap_region(string path, mode_t _mode, size_t len)
         void open()
         void sync()
         void close()

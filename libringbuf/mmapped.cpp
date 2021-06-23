@@ -1,5 +1,6 @@
 #include "mmapped.h"
 
+
 namespace mmapped {
 // wrap mmap around smart ptr
 std::shared_ptr<void> mmap_ptr(void *addr, size_t length, int prot,
@@ -16,38 +17,38 @@ void mmap_region::open() {
   int flags, prot, mmap_flags;
 
   switch (mode) {
-    case Mode::CR:
+    case mode_t::CR:
       flags = O_RDWR | O_CREAT;
       prot = PROT_READ | PROT_WRITE;
       mmap_flags = MAP_SHARED;
       break;
-    case Mode::RO:
+    case mode_t::RO:
       flags = O_RDONLY;
       prot = PROT_READ;
       mmap_flags = MAP_SHARED;
       break;
-    case Mode::SHARED:
+    case mode_t::SHARED:
       flags = O_CREAT | O_RDWR;
       prot = PROT_READ | PROT_WRITE;
       mmap_flags = MAP_SHARED;
       break;
-    case Mode::ANON:
+    case mode_t::ANON:
       prot = PROT_READ | PROT_WRITE;
       mmap_flags = MAP_ANONYMOUS | MAP_SHARED;
       break;
     default:
-      throw mmap_error("Mode not supported");
+      throw mmap_error("mode_t not supported");
   }
 
   // do not create files for anon maps
-  if (mode != Mode::ANON) {
+  if (mode != mode_t::ANON) {
     fd = ::open(path.c_str(), flags, 0644);
 
     if (fd == -1) {
       throw mmap_error("Failed to open file descriptor");
     }
 
-    if (mode == Mode::CR || mode == Mode::SHARED) {
+    if (mode == mode_t::CR || mode == mode_t::SHARED) {
       truncate(path.c_str(), len);
     }
   
@@ -61,18 +62,18 @@ void mmap_region::open() {
 
   addr = mmap_ptr(nullptr, len, prot, mmap_flags, fd, 0u);
   if (addr == nullptr) {
-    throw mmap_error("mmap failed");
+    throw mmap_error("Failed mmap");
   }
 }
 
 void mmap_region::sync() { msync(addr.get(), len, MS_SYNC); }
 
 void mmap_region::close() {
-  if (mode == Mode::CR)
+  if (mode == mode_t::CR)
     sync();
 
   addr.reset(); // calls munmap
-  if (mode != Mode::ANON)
+  if (mode != mode_t::ANON)
     ::close(fd);
 }
 
