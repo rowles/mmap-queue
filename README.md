@@ -5,7 +5,7 @@ mmap backed ring buffer implemented in C++ with Cython bindings.
 
 The mmap can be either shared anonymous or file-backed to allow the queue to exceed memory limits.
 
-Ring buffers uses one lock (shared process mutex) for puts/gets.
+Ring buffers uses one shared process mutex for puts/gets.
 
 Only tested using Linux mmap/mutex syscalls.
 
